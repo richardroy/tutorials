@@ -1,16 +1,22 @@
 const User = require('../models/user')
 const AuthService = require('./AuthService');
 
-exports.getUser = async (email) => {
+exports.getUser = async (email, customFields) => {
   const user = await User.findOne({
     email
-  });
-
+  }).select(customFields);
   return user;
 }
 
+exports.getAllUsers = async () => {
+  const users = await User.find();
+  return users;
+}
+
 exports.getUserHash = async (email) => {
-  const user = this.getUser(email);
+  const user = await this.getUser(email, '+hash');
+  console.log('getUserHash');
+  console.log(user);
   return user.hash;
 }
 
@@ -33,11 +39,6 @@ exports.createUser = (async (email, name, password) => {
   }
 });
 
-exports.loginUser = (email, password) => {
-  const hash = this.getUserHash(email);
-  const loggedIn = AuthService.validPassword(password, hash);
-}
-
 exports.authenticateUser = async (email, password) => {
   let user = null;
 
@@ -50,13 +51,14 @@ exports.authenticateUser = async (email, password) => {
   if (!user) {
     return { success: false, message: 'Authentication failed. User not found.' };
   } else if (user) {
-
-    if (!AuthService.validPassword(password, user.hash)) {
+    const hash = await this.getUserHash(email);
+    const validPassword = await AuthService.validPassword(password, hash);
+    if (!validPassword) {
       return { success: false, message: 'Authentication failed. Wrong password.' };
     } else {
 
       const payload = {
-        admin: user.admin     
+        email: user.email 
       };
 
       var token = AuthService.generateJwtToken(payload);
