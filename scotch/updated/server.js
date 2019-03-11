@@ -7,19 +7,20 @@ var bodyParser  = require('body-parser');
 var morgan      = require('morgan');
 var mongoose    = require('mongoose');
 
-var jwt    = require('jsonwebtoken'); // used to create, sign, and verify tokens
 var config = require('./config'); // get our config file
-var User   = require('./app/models/user'); // get our mongoose model
+var User   = require('./src/models/user'); // get our mongoose model
+
+const UserService = require('./src/services/UserService')
+const AuthService = require('./src/services/AuthService')
 
 // =======================
 // configuration =========
 // =======================
 var port = process.env.PORT || 8080; // used to create, sign, and verify tokens
 mongoose.connect(config.database); // connect to database
-app.set('superSecret', config.secret); // secret variable
 
 // use body parser so we can get info from POST and/or URL parameters
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // use morgan to log requests to the console
@@ -38,44 +39,20 @@ app.get('/', function(req, res) {
 // get an instance of the router for api routes
 var apiRoutes = express.Router(); 
 
+app.post('/user', async (req, res) => {
+  const response = await UserService.createUser(req.body.email, req.body.name, req.body.password);
+  res.json(response);
+});
+
+app.post('/login', async (req, res) => {
+  const respone = await AuthService.login(req.body.email, req.body.password);
+  res.json(response);
+})
+
 // route to authenticate a user (POST http://localhost:8080/api/authenticate)
-apiRoutes.post('/authenticate', function(req, res) {
-
-  // find the user
-  User.findOne({
-    name: req.body.name
-  }, function(err, user) {
-
-    if (err) throw err;
-
-    if (!user) {
-      res.json({ success: false, message: 'Authentication failed. User not found.' });
-    } else if (user) {
-
-      // check if password matches
-      if (user.password != req.body.password) {
-        res.json({ success: false, message: 'Authentication failed. Wrong password.' });
-      } else {
-
-        // if user is found and password is right
-        // create a token with only our given payload
-    // we don't want to pass in the entire user since that has the password
-    const payload = {
-      admin: user.admin     };
-        var token = jwt.sign(payload, app.get('superSecret'), {
-          expiresIn: 60*60*24 // expires in 24 hours
-        });
-
-        // return the information including token as JSON
-        res.json({
-          success: true,
-          message: 'Enjoy your token!',
-          token: token
-        });
-      } 
-    }
-
-  });
+apiRoutes.post('/authenticate', async (req, res) => {
+  const response = await UserService.authenticateUser(req.body.email, req.body.password);
+  res.json(response);
 });
 
 // route middleware to verify a token
@@ -86,23 +63,18 @@ apiRoutes.use(function(req, res, next) {
 
   // decode token
   if (token) {
-
-    // verifies secret and checks exp
-    jwt.verify(token, app.get('superSecret'), function(err, decoded) {       if (err) {
-        return res.json({ success: false, message: 'Failed to authenticate token.' });       } else {
-        // if everything is good, save to request for use in other routes
-        req.decoded = decoded;         next();
-      }
-    });
-
+    const response = AuthService.validateJwtToken(token);
+    if(response.success) {
+      req.decoded = response.decoded
+      next();
+    } else {
+      res.json(response);
+    }
   } else {
-    // if there is no token
-    // return an error
     return res.status(403).send({ 
         success: false, 
         message: 'No token provided.' 
     });
-
   }
 });
 
@@ -120,24 +92,6 @@ apiRoutes.get('/users', function(req, res) {
  
 // apply the routes to our application with the prefix /api
 app.use('/api', apiRoutes);
-
-app.get('/setup', function(req, res) {
-
-  // create a sample user
-  var nick = new User({ 
-    name: 'Nick Cerminara', 
-    password: 'password',
-    admin: true 
-  });
-
-  // save the sample user
-  nick.save(function(err) {
-    if (err) throw err;
-
-    console.log('User saved successfully');
-    res.json({ success: true });
-  });
-});
 
 // =======================
 // start the server ======
