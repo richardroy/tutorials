@@ -11,14 +11,12 @@ apiRoutes.get('/', (req, res) => {
 });
 
 apiRoutes.post('/user', async (req, res) => {
-  console.log(req.body);
   const response = await UserService.createUser(req.body.email, req.body.name, req.body.password);
   res.json(response);
 });
 
 // route to authenticate a user (POST http://localhost:8080/api/authenticate)
 apiRoutes.post('/authenticate', async (req, res) => {
-  console.log(req.body)
   const email = req.body ? req.body.email : '';
   const password = req.body ? req.body.password : '';
   const response = await UserService.authenticateUser(email, password);

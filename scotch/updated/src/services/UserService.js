@@ -15,8 +15,6 @@ exports.getAllUsers = async () => {
 
 exports.getUserHash = async (email) => {
   const user = await this.getUser(email, '+hash');
-  console.log('getUserHash');
-  console.log(user);
   return user.hash;
 }
 

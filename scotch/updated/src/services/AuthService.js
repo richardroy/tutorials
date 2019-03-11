@@ -24,7 +24,6 @@ exports.generateJwtToken = (payload) => {
 exports.validateJwtToken = (token) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(decoded)
     return { success: true, decoded } 
   } catch(err) {
     return { success: false, message: 'Failed to authenticate token.' };
