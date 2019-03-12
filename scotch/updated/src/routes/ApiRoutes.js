@@ -23,13 +23,12 @@ apiRoutes.post('/authenticate', async (req, res) => {
   res.json(response);
 });
 
-// route middleware to verify a token
+//Verify the token
 apiRoutes.use( (req, res, next) => {
 
-  // check header or url parameters or post parameters for token
-  var token = req.body.token || req.query.token || req.headers['x-access-token'];
+  const authHeader = req.headers['authorization'] || "";
+  const token = AuthService.getJwtTokenFromHeader(authHeader);
 
-  // decode token
   if (token) {
     const response = AuthService.validateJwtToken(token);
     if(response.success) {

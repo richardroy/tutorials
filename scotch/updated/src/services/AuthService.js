@@ -29,3 +29,12 @@ exports.validateJwtToken = (token) => {
     return { success: false, message: 'Failed to authenticate token.' };
   }
 }
+
+exports.getJwtTokenFromHeader = (authHeader) => {
+  let authorization = authHeader.split(' ');
+  if (authorization[0] !== 'Bearer') {
+      throw new Error('Authorization token does not exist');
+  } else {
+    return authorization[1];
+  }
+}
