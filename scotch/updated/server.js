@@ -13,12 +13,22 @@ mongoose.connect(process.env.MONGODB_DATABASE_URL);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE, OPTIONS");
+    if (req.method === "OPTIONS") {
+        return res.status(200).end();
+    }
+    next();
+  });  
+
 app.use(morgan('dev'));
 
 app.use('/api', apiRoutes);
 
 app.get('/', (req, res) => {
-    res.send('Hello! The API is at http://localhost:' + port + '/api');
+    res.json({message: 'Hello! The API is at http://localhost:' + port + '/api'});
 });
 
 app.listen(port);

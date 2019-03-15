@@ -7,7 +7,7 @@ exports.encryptPassword = (password) => {
   const salt = bcrypt.genSaltSync(saltRounds);
   const hash = bcrypt.hashSync(password, salt);
 
-  return {salt, hash};
+  return hash;
 }
 
 exports.validPassword = (password, hash) => {
@@ -22,11 +22,11 @@ exports.generateJwtToken = (payload) => {
 }
 
 exports.validateJwtToken = (token) => {
+  let decodedToken = null;
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return { success: true, decoded } 
-  } catch(err) {
-    return { success: false, message: 'Failed to authenticate token.' };
+    decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+  } finally {
+    return decodedToken;
   }
 }
 

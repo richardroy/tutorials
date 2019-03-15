@@ -1,5 +1,6 @@
 const User = require('../models/user')
 const AuthService = require('./AuthService');
+const Response = require('./ResponseService');
 
 exports.getUser = async (email, customFields) => {
   const user = await User.findOne({
@@ -13,60 +14,44 @@ exports.getAllUsers = async () => {
   return users;
 }
 
-exports.getUserHash = async (email) => {
-  const user = await this.getUser(email, '+hash');
-  return user.hash;
-}
-
 exports.createUser = (async (email, name, password) => {  
-  const encryptCredentials = AuthService.encryptPassword(password);
+  const hash = AuthService.encryptPassword(password);
 
   var newUser = new User({ 
     email,
     name,
-    hash: encryptCredentials.hash
+    hash
   });
 
   try{
     await newUser.save()
 
     console.log('User saved successfully');
-    return({ success: true });
+    return Response.success({});
   } catch (err) {
     throw err;
   }
 });
 
 exports.authenticateUser = async (email, password) => {
-  let user = null;
-
-  try {
-    user = await this.getUser(email);
-  } catch (err) {
-    throw err;
-  }
-
+  const user = await this.getUser(email, '+hash');
   if (!user) {
-    return { success: false, message: 'Authentication failed. User not found.' };
+    return Response.error('Authentication failed. User not found.');
   } else if (user) {
-    const hash = await this.getUserHash(email);
-    const validPassword = await AuthService.validPassword(password, hash);
+    const validPassword = await AuthService.validPassword(password, user.hash);
     if (!validPassword) {
-      return { success: false, message: 'Authentication failed. Wrong password.' };
+      return Response.error('Authentication failed. Wrong password.');
     } else {
-
       const payload = {
         email: user.email 
       };
-
       var token = AuthService.generateJwtToken(payload);
 
-      return {
-        success: true,
+      return Response.success({
         message: 'Enjoy your token!',
-        token: token
-      };
-    } 
+        token
+      })
+    };
   }
 
 };

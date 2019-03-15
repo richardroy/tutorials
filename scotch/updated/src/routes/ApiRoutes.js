@@ -17,9 +17,9 @@ apiRoutes.post('/user', async (req, res) => {
 
 // route to authenticate a user (POST http://localhost:8080/api/authenticate)
 apiRoutes.post('/authenticate', async (req, res) => {
-  const email = req.body ? req.body.email : '';
+  const username = req.body ? req.body.username : '';
   const password = req.body ? req.body.password : '';
-  const response = await UserService.authenticateUser(email, password);
+  const response = await UserService.authenticateUser(username, password);
   res.json(response);
 });
 
@@ -30,18 +30,19 @@ apiRoutes.use( (req, res, next) => {
   const token = AuthService.getJwtTokenFromHeader(authHeader);
 
   if (token) {
-    const response = AuthService.validateJwtToken(token);
-    if(response.success) {
-      req.decoded = response.decoded
+    const decodedToken = AuthService.validateJwtToken(token);
+    if(decodedToken) {
+      req.token = decodedToken
       next();
     } else {
-      res.json(response);
+      res.json(
+        ResponseService.error('Failed to authenticate token.')
+      );
     }
   } else {
-    return res.status(403).send({ 
-        success: false, 
-        message: 'No token provided.' 
-    });
+    res.json(
+      ResponseService.error('No Token provided.')
+    );
   }
 });
 
